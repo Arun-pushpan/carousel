@@ -1,0 +1,1566 @@
+
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:leo_inspector/src/appcolors/colors.dart';
+import 'package:leo_inspector/widget/text_const.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as p;
+
+import '../../../../../../firebase/API/admin/inspectoe_api.dart';
+
+class ForkliftView extends StatefulWidget {
+  final List<String> certificateOneList;
+  final List<String> certificateTwoList;
+  final bool isSelectedSign;
+
+  const ForkliftView({
+    required this.certificateOneList,
+    required this.certificateTwoList,
+    required this.isSelectedSign,
+
+    super.key,
+  });
+
+  @override
+  State<ForkliftView> createState() => _ForkliftViewState();
+}
+
+class _ForkliftViewState extends State<ForkliftView> {
+   String? pSign;
+   late String pName;
+
+   Future<Uint8List?> _downloadImageFromFirebaseStorage(String imageUrl) async {
+     final FirebaseStorage storage = FirebaseStorage.instance;
+     final Reference ref = storage.refFromURL(imageUrl);
+     final FullMetadata metadata = await ref.getMetadata();
+     final Uint8List? data = await ref.getData(metadata.size!);
+     return data;
+   }
+
+
+  Future<void> makePdf() async {
+    final Uint8List backgroundImageBytes =
+    (await rootBundle.load('assets/images/sos.jpg')).buffer.asUint8List();
+    final Uint8List backgroundImageBytes1 =
+    (await rootBundle.load('assets/images/leea.jpg')).buffer.asUint8List();
+    final Uint8List? backgroundImageBytes2 = await _downloadImageFromFirebaseStorage(pSign!);
+
+    final pdf = p.Document();
+
+    pdf.addPage(
+      p.MultiPage(
+          margin: p.EdgeInsets.all(10),
+          pageFormat: PdfPageFormat.a4,
+         header: (context)=> p.Padding(
+           padding: const p.EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
+           child: p.Row(
+             mainAxisAlignment: p.MainAxisAlignment.spaceBetween,
+             children: [
+               p.SizedBox(
+                   height: 50,
+                   width: 70,
+                   child: p.Image(p.MemoryImage(backgroundImageBytes), fit: p.BoxFit.fill)
+               ),
+               p. SizedBox(
+                   height: 50,
+                   width: 70,
+                   child: p.Image(p.MemoryImage(backgroundImageBytes1), fit: p.BoxFit.fill)
+               )
+             ],
+           ),
+         ),
+         footer: (context) => p.Column(
+          children: [
+            p.Padding(
+              padding: p.EdgeInsets.symmetric(vertical: 5.0, horizontal: 8),
+              child: p.Row(
+                mainAxisAlignment: p.MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: p.CrossAxisAlignment.start,
+                children: [
+                  p.Text(
+                    " Approved by,\n name & signature:",
+                    style: customText1,
+                  ),
+                  p.Column(
+                    children: [
+                      p.Text(
+                        " Inspected by,\n name & signature: ",
+                        style: customText1,
+                      ),p.SizedBox(height: 10,),
+                      p.Text(pName.isNotEmpty?pName:"",style: customText1,),
+                      if (widget.isSelectedSign == true)
+                        p.SizedBox(
+                            height: 30,
+                            width: 60,
+                           child: p.Image(p.MemoryImage(backgroundImageBytes2!), fit: p.BoxFit.fill)
+                            )
+                    ],
+                  ),
+
+                ],
+              ),
+            ),
+
+            p.Padding(
+              padding: p.EdgeInsets.symmetric(vertical: 5, horizontal: 8.0),
+              child: p.Text(
+                "This is to certify that the examiner found the above-mentioned equipment is safe (if stated above) for its intended use within the limits specified providing there is continuous maintenance applied and qualified operators employed.The Certificate validity cease if any repair or alteration on the equipment, in which case it must be reexamined.This certification complies-the requirements of the lifting operations and Lifting Equipment Regulation 1998.\n\nSOS/LE/F-10 Rev.2 09/2023   ",
+                style: p.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey,
+                    wordSpacing: 1,
+                    letterSpacing: 1),
+              ),
+            )
+          ],
+        ),
+        build: (context)=>[
+          p.Column(
+            children: [
+              p.Text(
+                "CERTIFICATE OF TEST & THOROUGH EXAMINATION OF FORKLIFT",
+                textAlign: p.TextAlign.center,
+                style: p.TextStyle(
+                    fontSize: 12,
+                    fontWeight: p.FontWeight.bold),
+              ),p.SizedBox(height: 20),
+              p.Padding(
+                padding: const p.EdgeInsets.symmetric(
+                    horizontal: 10.0, ),
+                child: p.Row(
+                  mainAxisAlignment: p.MainAxisAlignment.spaceBetween,
+                  children: [
+                    p.Text("Certificate No : ${widget.certificateOneList[2]}",
+                        style: p.TextStyle(fontSize: 9,fontWeight: p.FontWeight.bold,),),
+                    p.SizedBox(width: 20),
+                    p.Text(
+                      "Date of Inspection : ${widget.certificateOneList[1]}",
+                      style: p.TextStyle(fontSize: 9,fontWeight: p.FontWeight.bold,),
+                    ),
+                  ],
+                ),
+              ),
+
+              p.Padding(
+                padding: const p.EdgeInsets.symmetric(
+                    horizontal: 10.0, vertical: 9.0),
+                child: p.Row(
+                  mainAxisAlignment: p.MainAxisAlignment.spaceBetween,
+                  children: [
+                    p.Text("Job card No : ${widget.certificateOneList[3]}",
+                      style: p.TextStyle(fontSize: 9,fontWeight: p.FontWeight.bold,),),
+                    p.SizedBox(width: 20),
+                    p.Text(
+                      "Starting time of inspection : ${widget.certificateOneList[4]}",
+                      style: p.TextStyle(fontSize: 9,fontWeight: p.FontWeight.bold,),
+                    ),
+                  ],
+                ),
+              ),
+              p.Padding(
+                padding: const p.EdgeInsets.symmetric(horizontal: 8.0),
+                child: p.Table(
+                  border: p.TableBorder.all(
+                      color: PdfColors.black,
+                      style: p.BorderStyle.solid,
+                      width: 1),
+                  children: [
+
+                    p.TableRow(
+                      children: [
+                        p.Expanded(
+                          child: textwidget(text: "  Name and Address of the Owner :"),
+                        ),
+                        p.Expanded(
+                          child: textwidget(text: widget.certificateOneList[5],),
+                        ),
+
+                      ],
+                    ),
+                    p.TableRow(
+
+                      children: [
+                        textwidget(text: "  Maker & Date of Manufacture :"),
+                        textwidget(text: widget.certificateOneList[6],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Place of Inspection :"),
+                        textwidget(text: widget.certificateOneList[7],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Ref. Standard : "),
+                        textwidget(text: widget.certificateOneList[8],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Registration No. & Owner No. :"),
+                        textwidget(text: widget.certificateOneList[9],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Model No. and Serial No. : "),
+                        textwidget(text: widget.certificateOneList[10],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Running hours :"),
+                        textwidget(text: widget.certificateOneList[11],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Manufacturer‘s documentation :"),
+                        textwidget(text: widget.certificateOneList[12],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Date of Previous inspection / cert no :"),
+                        textwidget(text: widget.certificateOneList[13],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Date of Next inspection :"),
+                        textwidget(text: widget.certificateOneList[14],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Date of Previous load test / cert no :"),
+                        textwidget(text: widget.certificateOneList[15],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Date of Next load test:"),
+                        textwidget(text: widget.certificateOneList[16],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Availability of operations manual in cabin :"),
+                        textwidget(text: widget.certificateOneList[17],),
+                      ],
+                    ),
+                    p.TableRow(
+                      children: [
+                        textwidget(text: "  Availability of daily check report :"),
+                        textwidget(text: widget.certificateOneList[18],),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+        p.Padding(
+          padding: const p.EdgeInsets.symmetric(horizontal: 8.0),
+          child: p.Container(
+            decoration: p.BoxDecoration(
+                border: p.Border(
+                    right: p.BorderSide(width: 1),
+                    left: p.BorderSide(width: 1),
+                    bottom: p.BorderSide(width: 1))),
+            height: 100,
+            width: double.infinity,
+            child: p.Column(
+              mainAxisAlignment: p.MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: p.CrossAxisAlignment.start,
+              children: [
+
+                p.Text(
+                  " Description of Forklift :  ${widget.certificateOneList[19]}",
+                  style: customText1,
+                ),
+                p.Text(
+                  " Diesel powered hydraulic counter balanced \n fork lift with side shifter SWL :   ${widget.certificateOneList[20]} ",
+                  style: customText1,
+                ),
+                p.Text(
+                  " Height of Lift  :  ${widget.certificateOneList[21]}",
+                  style: customText1,
+                )
+              ],
+            ),
+          ),
+        ),
+        p.Padding(
+          padding: const p.EdgeInsets.symmetric(horizontal: 8.0),
+          child: p.Row(
+            children: [
+              p.Expanded(
+                flex: 2,
+                child: p.Container(
+                  height: 220,
+                  decoration: p.BoxDecoration(
+                      border: p.Border(
+                          left: p.BorderSide(width: 1),
+                          right: p.BorderSide(width: 1),
+                          bottom: p.BorderSide(width: 1))),
+                  child: p.Column(
+                    mainAxisAlignment: p.MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: p.CrossAxisAlignment.start,
+                    children: [
+                      p.Text(
+                        "  Description of test :  ${widget.certificateOneList[22]}",
+                        style: customText1,
+                      ),
+                      p.Text(
+                        " Load test carried out as per tabulated column\n Load cell used :  ${widget.certificateOneList[23]}",
+                        style: customText1,
+                      ),
+                      p.Text(
+                        " Calibration certificate :  ${widget.certificateOneList[24]}",
+                        style: customText1,
+                      ),
+                      p.Text(
+                        " Functional test carried out found satisfactory:  ${widget.certificateOneList[25]} ",
+                        style: customText1,
+                      ),
+                      p.Text(
+                        " Hydraulic creep : ${widget.certificateOneList[26]}  ",
+                        style: customText1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              p.Column(
+                children: [
+                  p.Container(
+                    height: 60,
+                    width: 80,
+                    decoration: p.BoxDecoration(
+                        border: p.Border(
+                            right: p.BorderSide(width: 1),
+                            bottom: p.BorderSide(width: 1))),
+                    child: p.Text(
+                      'Test Load\napplied \n in kgs',
+                      style: customText1,
+                      textAlign: p.TextAlign.center,
+                    ),
+                  ),
+                  p.Container(
+                    height: 160,
+                    width: 80,
+                    decoration: p.BoxDecoration(
+                        border: p.Border(
+                            right: p.BorderSide(width: 1),
+                            bottom: p.BorderSide(width: 1))),
+                    child: p.Text(
+                      "${widget.certificateOneList[27]}",
+                      style: customText1,
+                    ),
+                  )
+                ],
+              ),
+              p.Column(
+                children: [
+                  p.Container(
+                    height: 60,
+                    width: 80,
+                    decoration: p.BoxDecoration(
+                        border: p.Border(
+                            right: p.BorderSide(width: 1),
+                            bottom: p.BorderSide(width: 1))),
+                    child: p.Text(
+                      'S.W.L\n in kgs',
+                      style: customText1,
+                      textAlign: p.TextAlign.center,
+                    ),
+                  ),
+                  p.Container(
+                    height: 160,
+                    width: 80,
+                    decoration: p.BoxDecoration(
+                        border: p.Border(
+                            right: p.BorderSide(width: 1),
+                            bottom: p.BorderSide(width: 1))),
+                    child: p.Text(
+                      "${widget.certificateOneList[28]}",
+                      style: customText1,
+                    ),
+                  )
+                ],
+              )
+            ],
+          ),
+        ),
+              p.Padding(
+                padding:
+                const p.EdgeInsets.symmetric(horizontal: 8.0, vertical: 15),
+                child: p.Container(
+                  height: 60,
+                  width: double.infinity,
+                  child: p.Text(
+                    "  Conclusion :  ${widget.certificateOneList[29]}",
+                    style: customText1,
+                  ),
+                  decoration: p.BoxDecoration(border: p.Border.all(width: 1)),
+                ),
+              ),
+
+
+            ]
+          )
+
+        ]
+      )
+    );
+    pdf.addPage(
+        p.MultiPage(
+            margin: p.EdgeInsets.all(10),
+            pageFormat: PdfPageFormat.a4,
+            header: (context)=> p.Padding(
+              padding: const p.EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
+              child: p.Row(
+                mainAxisAlignment: p.MainAxisAlignment.spaceBetween,
+                children: [
+                  p.SizedBox(
+                      height: 50,
+                      width: 70,
+                      child: p.Image(p.MemoryImage(backgroundImageBytes), fit: p.BoxFit.fill)
+                  ),
+                  p. SizedBox(
+                      height: 50,
+                      width: 70,
+                      child: p.Image(p.MemoryImage(backgroundImageBytes1), fit: p.BoxFit.fill)
+                  )
+                ],
+              ),
+            ),
+            footer: (context) => p.Column(
+              children: [
+                p.Padding(
+                  padding: p.EdgeInsets.symmetric(vertical: 5.0, horizontal: 8),
+                  child: p.Row(
+                    mainAxisAlignment: p.MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: p.CrossAxisAlignment.start,
+                    children: [
+                      p.Text(
+                        " Approved by,\n name & signature:",
+                        style: customText1,
+                      ),
+                      p.Column(
+                        children: [
+                          p.Text(
+                            " Inspected by,\n name & signature: ",
+                            style: customText1,
+                          ),p.SizedBox(height: 10,),
+                          p.Text(pName.isNotEmpty?pName:"" ,style: customText1,),
+                          if (widget.isSelectedSign == true)
+                            p.SizedBox(
+                              height: 30,
+                              width: 60,
+                              child: p.Image(p.MemoryImage(backgroundImageBytes2!), fit: p.BoxFit.fill)
+                            )
+                        ],
+                      ),
+
+                    ],
+                  ),
+                ),
+
+                p.Padding(
+                  padding: p.EdgeInsets.symmetric(vertical: 5, horizontal: 8.0),
+                  child: p.Text(
+                    "This is to certify that the examiner found the above-mentioned equipment is safe (if stated above) for its intended use within the limits specified providing there is continuous maintenance applied and qualified operators employed.The Certificate validity cease if any repair or alteration on the equipment, in which case it must be reexamined.This certification complies-the requirements of the lifting operations and Lifting Equipment Regulation 1998.\n\nSOS/LE/F-10 Rev.2 09/2023   ",
+                    style: p.TextStyle(
+                        fontSize: 8,
+                        color: PdfColors.grey,
+                        wordSpacing: 1,
+                        letterSpacing: 1),
+                  ),
+                )
+              ],
+            ),
+            build: (context)=>[
+              p.Column(
+                  children: [
+                    p.Padding(padding: p.EdgeInsets.only(top: 40),
+                        child:  p.Text(
+                          "ANNEXURE OF CERTIFICATE OF TEST & THROUGH EXAMINATION OF FORKLIFT",
+                          textAlign: p.TextAlign.center,
+                          style: p.TextStyle(
+                              fontSize: 12,
+                              fontWeight: p.FontWeight.bold),
+                        ))
+                   ,p.SizedBox(height: 40),
+                    p.Padding(
+                      padding: const p.EdgeInsets.symmetric(
+                        horizontal: 10.0,vertical: 20 ),
+                      child: p.Row(
+                        mainAxisAlignment: p.MainAxisAlignment.spaceBetween,
+                        children: [
+                          p.Text("Certificate No : ${widget.certificateOneList[2]}",
+                            style: p.TextStyle(fontSize: 9,fontWeight: p.FontWeight.bold,),),
+                          p.SizedBox(width: 20),
+                          p.Text(
+                            "Date of Inspection : ${widget.certificateOneList[1]}",
+                            style: p.TextStyle(fontSize: 9,fontWeight: p.FontWeight.bold,),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    p.Padding(
+                      padding: const p.EdgeInsets.symmetric(horizontal: 8.0,vertical: 20.0),
+                      child: p.Table(
+                        border: p.TableBorder.all(
+                            color: PdfColors.black,
+                            style: p.BorderStyle.solid,
+                            width: 1),
+                        children: [
+                          p.TableRow(
+                            children: [
+                              p.SizedBox(
+                                height: 20,
+                                  child: p.Expanded(
+                                    child: textwidget1(text: "  Description",),
+                                  ),),
+                              p.SizedBox(
+                                height: 20,
+                                child: p.Expanded(
+                                  child: textwidget1(text: "  Condition"),
+                                ),),
+                              p.SizedBox(
+                                height: 20,
+                                child: p.Expanded(
+                                  child: textwidget1(text: "  Remarks"),
+                                ),),
+
+                            ],
+                          ),
+                          p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Tires,rims,wheel bolts and axles "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[2],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[3],),
+                              ),
+                            ],
+                          ),
+                          p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Masts and Back rest carriage "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[4],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[5],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Forks and its extension slide end stopper,locks "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[6],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[7],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Load chain and its assemblies"),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[8],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[9],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " side rollers and roll over cage"),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[10],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[11],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Safety devices "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[12],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[13],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Battery and its connections "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[14],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[15],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Hydraulic system & hoses and end fittings "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[16],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[17],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Electrical system & cables "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[18],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[19],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Cooling system "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[20],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[21],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Streeing function "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[22],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[23],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " All controls levers function & symbols legible"),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[24],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[25],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Capacity plate in place and legible "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[26],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[27],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " All gauges in cab"),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[28],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[29],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Overhead & foot guard "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[30],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[31],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Exhaust system "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[32],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[33],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Side shifting function (if applicable) "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[34],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[35],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Horn,reverse alarm,rotating warning light "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[36],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[37],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Light & indicators "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[38],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[39],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Seat and seat belts "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[40],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[41],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Parking brake and foot brake function "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[42],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[43],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Fire extinguisher "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[44],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[45],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " MPI fork blades, date / report nr.(annually) "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[46],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[47],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Mast disassembly (every 4 years) "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[48],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[49],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " General condition "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[50],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[51],),
+                              ),
+                            ],
+                          ), p.TableRow(
+                            children: [
+                              p.Expanded(
+                                child: textwidget(text: " Display markings (SWL ,tire pressure, insp.date , "),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[52],),
+                              ),
+                              p.Expanded(
+                                child: textwidget(text: widget.certificateTwoList[53],),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    p.Padding(
+                      padding:
+                      const p.EdgeInsets.symmetric(horizontal: 8.0, vertical: 30),
+                      child: p.Container(
+                        height: 60,
+                        width: double.infinity,
+                        child: p.Text(
+                          "  General comments :  ${widget.certificateTwoList[54]}",
+                          style: customText1,
+                        ),
+                        decoration: p.BoxDecoration(border: p.Border.all(width: 1)),
+                      ),
+                    ),
+
+
+                  ]
+              )
+
+            ]
+        )
+    );
+    Directory root = await getApplicationDocumentsDirectory();
+    String path = '${root.path}/test.pdf';
+    final file = File(path);
+    await file.writeAsBytes(await pdf.save());
+    print("path"+path);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final splitHeight = screenHeight.toString().split('.');
+    int height = int.parse(splitHeight[0]);
+    return Scaffold(
+      backgroundColor: Colors.grey,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(55),
+        child: AppBar(
+          backgroundColor: AppTheme.colors.appDarkBlue,
+          leadingWidth: 180,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 15.0, top: 3, bottom: 3),
+            child: SizedBox(
+                height: 60,
+                width: 400,
+                child: Image.asset(
+                  "assets/icons/leo_logo.png",
+                  fit: BoxFit.fill,
+                )),
+          ),
+          actions: [
+            Padding(
+                padding: const EdgeInsets.only(right: 15.0),
+                child: RotatedBox(
+                  quarterTurns: 2,
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(
+                      Icons.double_arrow,
+                      size: 30,
+                      color: AppTheme.colors.logoColor,
+                    ),
+                  ),
+                ))
+          ],
+        ),
+      ),
+      body: ListView(
+        children: [
+          Container(
+            color: Colors.white,
+            width: double.infinity,
+            child: Column(
+              children: [
+                header(),
+                Text(
+                  "CERTIFICATE OF TEST & THOROUGH EXAMINATION OF FORKLIFT",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width * .04,
+                      fontWeight: FontWeight.w700),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10.0, vertical: 7.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Certificate No : ${widget.certificateOneList[2]}",
+                          style: customText,overflow: TextOverflow.ellipsis),
+                      SizedBox(width: MediaQuery.of(context).size.width * 0.21),
+                      Text(
+                        "Date of Inspection : ${widget.certificateOneList[1]}",
+                        style: customText,
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10.0, vertical: 10.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Job card No : ${widget.certificateOneList[3]}",
+                          style: customText),
+                      SizedBox(width: MediaQuery.of(context).size.width * 0.28),
+                      Text(
+                          "Starting time of inspection : ${widget.certificateOneList[4]}",
+                          style: customText),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Table(
+                    border: TableBorder.all(
+                        color: Colors.black,
+                        style: BorderStyle.solid,
+                        width: 2),
+                    children: [
+                      tableRow(
+                        "Name and Address of the Owner :",
+                        widget.certificateOneList[5],
+                      ),
+                      tableRow(
+                        "Maker & Date of Manufacture :",
+                        widget.certificateOneList[6],
+                      ),
+                      tableRow(
+                        "Place of Inspection : ",
+                        widget.certificateOneList[7],
+                      ),
+                      tableRow(
+                        "Ref. Standard :  ",
+                        widget.certificateOneList[8],
+                      ),
+                      tableRow(
+                        "Registration No. & Owner No. : ",
+                        widget.certificateOneList[9],
+                      ),
+                      tableRow(
+                        "Model No. and Serial No. : ",
+                        widget.certificateOneList[10],
+                      ),
+                      tableRow(
+                        "Running hours :",
+                        widget.certificateOneList[11],
+                      ),
+                      tableRow(
+                        "Manufacturer ‘s documentation : ",
+                        widget.certificateOneList[12],
+                      ),
+                      tableRow(
+                        "Date of Previous inspection / cert no : ",
+                        widget.certificateOneList[13],
+                      ),
+                      tableRow(
+                        "Date of Next inspection : ",
+                        widget.certificateOneList[14],
+                      ),
+                      tableRow(
+                        "Date of Previous load test / cert no : ",
+                        widget.certificateOneList[15],
+                      ),
+                      tableRow(
+                        "Date of Next load test:",
+                        widget.certificateOneList[16],
+                      ),
+                      tableRow(
+                        "Availability of operations manual in cabin :",
+                        widget.certificateOneList[17],
+                      ),
+                      tableRow(
+                        "Availability of daily check report :",
+                        widget.certificateOneList[18],
+                      ),
+                    ],
+                  ),
+                ),
+                secondRow(),
+                thirdRow(),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8.0, vertical: 15),
+                  child: Container(
+                    height: 80,
+                    width: double.infinity,
+                    child: Text(
+                      "  Conclusion :  ${widget.certificateOneList[29]}",
+                      style: customText,
+                    ),
+                    decoration: BoxDecoration(border: Border.all(width: 2)),
+                  ),
+                ),
+                footer()
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          Container(
+            color: Colors.white,
+            width: double.infinity,
+            child: Column(
+              children: [
+                header(),
+                Text(
+                  "Annexure of certificate of test & thorough examination of Forklift",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: MediaQuery.of(context).size.width * .04,
+                      fontWeight: FontWeight.w700),
+                ),
+                SizedBox(
+                  height: 5,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Text(
+                        "Certificate No:${widget.certificateTwoList[0]}",
+                        style: customText,
+                      ),
+                      Text("Inspection date: ${widget.certificateTwoList[1]}",
+                          style: customText)
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0, vertical: 10.0),
+                  child: Table(
+                    border: TableBorder.all(
+                        color: Colors.black,
+                        style: BorderStyle.solid,
+                        width: 2),
+                    children: [
+                      tableRowSecondPage(
+                          "Description ", "Condition", "Remarks"),
+                      tableRowSecondPage(
+                          "Tires, rims, wheel bolts and axles",
+                          widget.certificateTwoList[2],
+                          widget.certificateTwoList[3]),
+                      tableRowSecondPage(
+                          "Masts and Back rest, carriage  ",
+                          widget.certificateTwoList[4],
+                          widget.certificateTwoList[5]),
+                      tableRowSecondPage(
+                          "Forks and its extensions, slide end stopper, locks",
+                          widget.certificateTwoList[6],
+                          widget.certificateTwoList[7]),
+                      tableRowSecondPage(
+                        "Load chain and its assemblies ",
+                        widget.certificateTwoList[8],
+                        widget.certificateTwoList[9],
+                      ),
+                      tableRowSecondPage(
+                        "Side rollers and roll over cage",
+                        widget.certificateTwoList[10],
+                        widget.certificateTwoList[11],
+                      ),
+                      tableRowSecondPage(
+                        "Safety devices ",
+                        widget.certificateTwoList[12],
+                        widget.certificateTwoList[13],
+                      ),
+                      tableRowSecondPage(
+                        "Battery and its connections",
+                        widget.certificateTwoList[14],
+                        widget.certificateTwoList[15],
+                      ),
+                      tableRowSecondPage(
+                        "Hydraulic system & hoses and end fittings",
+                        widget.certificateTwoList[16],
+                        widget.certificateTwoList[17],
+                      ),
+                      tableRowSecondPage(
+                        "Electrical system & Cables ",
+                        widget.certificateTwoList[18],
+                        widget.certificateTwoList[19],
+                      ),
+                      tableRowSecondPage(
+                        "Cooling system ",
+                        widget.certificateTwoList[20],
+                        widget.certificateTwoList[21],
+                      ),
+                      tableRowSecondPage(
+                        "Steering function ",
+                        widget.certificateTwoList[22],
+                        widget.certificateTwoList[23],
+                      ),
+                      tableRowSecondPage(
+                        "All controls levers function & symbols legible ",
+                        widget.certificateTwoList[24],
+                        widget.certificateTwoList[25],
+                      ),
+                      tableRowSecondPage(
+                        "Capacity plate in place and legible ",
+                        widget.certificateTwoList[26],
+                        widget.certificateTwoList[27],
+                      ),
+                      tableRowSecondPage(
+                        "All gauges in cab ",
+                        widget.certificateTwoList[28],
+                        widget.certificateTwoList[29],
+                      ),
+                      tableRowSecondPage(
+                        "Overhead & foot guard ",
+                        widget.certificateTwoList[30],
+                        widget.certificateTwoList[31],
+                      ),
+                      tableRowSecondPage(
+                        "Exhaust system",
+                        widget.certificateTwoList[32],
+                        widget.certificateTwoList[33],
+                      ),
+                      tableRowSecondPage(
+                        "Side shifting function (if applicable)",
+                        widget.certificateTwoList[34],
+                        widget.certificateTwoList[35],
+                      ),
+                      tableRowSecondPage(
+                        "Horn, reverse alarm, rotating warning light",
+                        widget.certificateTwoList[36],
+                        widget.certificateTwoList[37],
+                      ),
+                      tableRowSecondPage(
+                          "Lights & indicators ",
+                          widget.certificateTwoList[38],
+                          widget.certificateTwoList[39]),
+                      tableRowSecondPage(
+                        "Seat and seat belts",
+                        widget.certificateTwoList[40],
+                        widget.certificateTwoList[41],
+                      ),
+                      tableRowSecondPage(
+                        "Parking brake and foot brake function",
+                        widget.certificateTwoList[42],
+                        widget.certificateTwoList[43],
+                      ),
+                      tableRowSecondPage(
+                        "Fire extinguisher",
+                        widget.certificateTwoList[44],
+                        widget.certificateTwoList[45],
+                      ),
+                      tableRowSecondPage(
+                        "MPI fork blades, date / report nr. (annually)",
+                        widget.certificateTwoList[46],
+                        widget.certificateTwoList[47],
+                      ),
+                      tableRowSecondPage(
+                        "Mast disassembly (every 4 years)",
+                        widget.certificateTwoList[48],
+                        widget.certificateTwoList[49],
+                      ),
+                      tableRowSecondPage(
+                        "General condition",
+                        widget.certificateTwoList[50],
+                        widget.certificateTwoList[51],
+                      ),
+                      tableRowSecondPage(
+                        "Display markings \n(SWL, tire pressure, insp. date, due date)",
+                        widget.certificateTwoList[52],
+                        widget.certificateTwoList[53],
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8.0, vertical: 15),
+                  child: Container(
+                    height: 80,
+                    width: double.infinity,
+                    child: Text(
+                      "General comments :${widget.certificateTwoList[54]}",
+                      style: customText,
+                    ),
+                    decoration: BoxDecoration(border: Border.all(width: 2)),
+                  ),
+                ),
+                footer()
+              ],
+            ),
+          )
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+          onPressed: (){
+            makePdf();
+          }),
+    );
+
+
+  }
+
+  Column footer() {
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 15.0, horizontal: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                " Approved by,\n name & signature:",
+                style: customText,
+              ),
+              StreamBuilder(
+                  stream:
+                      InspectorApiFb.getInspectorDetails(InspectorApiFb.inspId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                       pSign=snapshot.data!.docs.first['signature_img'];
+                       pName=snapshot.data!.docs.first['name'];
+                       print("=======+++-----$pName");
+                      return SizedBox();
+                    } else {
+                      return Column(
+                        children: [
+                          Text(
+                            " Inspected by,\n name & signature: ",
+                            style: customText,
+                          ),SizedBox(height: 10,),
+                          Text(snapshot.data!.docs.first['name'],style: customText,),
+                          if (widget.isSelectedSign == true)
+                            SizedBox(
+                                height: 40,
+                                width: 60,
+                                child: Image.network(
+                                    snapshot.data!.docs.first['signature_img']))
+                        ],
+                      );
+                    }
+                  }),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 15,
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8.0),
+          child: Text(
+            textAlign: TextAlign.start,
+            "This is to certify that the examiner found the above-mentioned equipment is safe (if stated above) for its intended use within the limits specified providing there is continuous maintenance applied and qualified operators employed.The Certificate validity cease if any repair or alteration on the equipment, in which case it must be reexamined.This certification complies-the requirements of the lifting operations and Lifting Equipment Regulation 1998.\n\nSOS/LE/F-10 Rev.2 09/2023   ",
+            style: TextStyle(
+                fontSize: 8,
+                color: Colors.grey,
+                fontWeight: FontWeight.w600,
+                wordSpacing: 1,
+                letterSpacing: 1),
+          ),
+        )
+      ],
+    );
+  }
+
+  Padding thirdRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Container(
+              height: 240,
+              decoration: BoxDecoration(
+                  border: Border(
+                      left: BorderSide(width: 2),
+                      right: BorderSide(width: 2),
+                      bottom: BorderSide(width: 2))),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "  Description of test :  ${widget.certificateOneList[22]}",
+                    style: customText,
+                  ),
+                  Text(
+                    " Load test carried out as per tabulated column\n Load cell used :  ${widget.certificateOneList[23]}",
+                    style: customText,
+                  ),
+                  Text(
+                    " Calibration certificate :  ${widget.certificateOneList[24]}",
+                    style: customText,
+                  ),
+                  Text(
+                    " Functional test carried out found satisfactory:  ${widget.certificateOneList[25]} ",
+                    style: customText,
+                  ),
+                  Text(
+                    " Hydraulic creep : ${widget.certificateOneList[26]}  ",
+                    style: customText,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Column(
+            children: [
+              Container(
+                height: 60,
+                width: MediaQuery.of(context).size.width * .201,
+                decoration: BoxDecoration(
+                    border: Border(
+                        right: BorderSide(width: 2),
+                        bottom: BorderSide(width: 2))),
+                child: Text(
+                  'Test Load\napplied \n in kgs',
+                  style: customText,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              Container(
+                height: 180,
+                width: MediaQuery.of(context).size.width * .201,
+                decoration: BoxDecoration(
+                    border: Border(
+                        right: BorderSide(width: 2),
+                        bottom: BorderSide(width: 2))),
+                child: Text(
+                  "${widget.certificateOneList[27]}",
+                  style: customText,
+                ),
+              )
+            ],
+          ),
+          Column(
+            children: [
+              Container(
+                height: 60,
+                width: MediaQuery.of(context).size.width * .201,
+                decoration: BoxDecoration(
+                    border: Border(
+                        right: BorderSide(width: 2),
+                        bottom: BorderSide(width: 2))),
+                child: Text(
+                  'S.W.L\n in kgs',
+                  style: customText,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              Container(
+                height: 180,
+                width: MediaQuery.of(context).size.width * .201,
+                decoration: BoxDecoration(
+                    border: Border(
+                        right: BorderSide(width: 2),
+                        bottom: BorderSide(width: 2))),
+                child: Text(
+                  "${widget.certificateOneList[28]}",
+                  style: customText,
+                ),
+              )
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Padding secondRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+            border: Border(
+                right: BorderSide(width: 2),
+                left: BorderSide(width: 2),
+                bottom: BorderSide(width: 2))),
+        height: 150,
+        width: double.infinity,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              " Description of Forklift :  ${widget.certificateOneList[19]}",
+              style: customText,
+            ),
+            Text(
+              " Diesel powered hydraulic counter balanced \n fork lift with side shifter SWL :   ${widget.certificateOneList[20]} ",
+              style: customText,
+            ),
+            Text(
+              " Height of Lift  :  ${widget.certificateOneList[21]}",
+              style: customText,
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  TableRow tableRow(
+    String question,
+    String answer,
+  ) {
+    return TableRow(children: [
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              question,
+              style: customText,
+            ),
+          ),
+        ],
+      ),
+      Column(
+        children: [
+          Text(
+            answer,
+            style: customText,
+          )
+        ],
+      )
+    ]);
+  }
+
+  TableRow tableRowSecondPage(String question, String answer1, String answer2) {
+    return TableRow(children: [
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              question,
+              style: customText,
+            ),
+          ),
+        ],
+      ),
+      Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              answer1,
+              style: customText,
+            ),
+          )
+        ],
+      ),
+      Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              answer2,
+              style: customText,
+            ),
+          )
+        ],
+      )
+    ]);
+  }
+}
+
+class header extends StatelessWidget {
+  const header({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          SizedBox(
+              height: 50,
+              width: 50,
+              child: Image.network(
+                  "https://media.wired.com/photos/593261cab8eb31692072f129/master/w_1920,c_limit/85120553.jpg")),
+          SizedBox(
+              height: 50,
+              width: 50,
+              child: Image.network(
+                  "https://media.wired.com/photos/593261cab8eb31692072f129/master/w_1920,c_limit/85120553.jpg"))
+        ],
+      ),
+    );
+  }
+}
